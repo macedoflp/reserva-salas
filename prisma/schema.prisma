@@ -12,3 +12,28 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Room {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  capacity     Int
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Reservation {
+  id           String   @id @default(uuid()) @db.Uuid
+  roomId       String   @db.Uuid
+  room         Room     @relation(fields: [roomId], references: [id])
+  title        String
+  participants Int
+  startsAt     DateTime
+  endsAt       DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([startsAt])
+  @@index([endsAt])
+}
