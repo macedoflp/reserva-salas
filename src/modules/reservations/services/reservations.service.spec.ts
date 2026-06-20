@@ -45,6 +45,28 @@ describe('ReservationsService', () => {
     );
   });
 
+  it('creates a reservation when there is no conflict', async () => {
+    repository.findRoomById.mockResolvedValue(room());
+    repository.findConflictingReservation.mockResolvedValue(null);
+    repository.create.mockResolvedValue(reservation());
+
+    const result = await service.create(createReservationDto());
+
+    expect(repository.findConflictingReservation).toHaveBeenCalledWith({
+      endsAt: new Date('2026-06-20T15:00:00.000Z'),
+      roomId: ROOM_ID,
+      startsAt: new Date('2026-06-20T14:00:00.000Z'),
+    });
+    expect(repository.create).toHaveBeenCalledWith({
+      endsAt: new Date('2026-06-20T15:00:00.000Z'),
+      participants: 4,
+      roomId: ROOM_ID,
+      startsAt: new Date('2026-06-20T14:00:00.000Z'),
+      title: 'Planejamento semanal',
+    });
+    expect(result.id).toBe(RESERVATION_ID);
+  });
+
   it('blocks reservations for unknown rooms', async () => {
     repository.findRoomById.mockResolvedValue(null);
 
@@ -80,6 +102,32 @@ describe('ReservationsService', () => {
     );
   });
 
+  it('allows a reservation that starts exactly when another one ends', async () => {
+    repository.findRoomById.mockResolvedValue(room());
+    repository.findConflictingReservation.mockResolvedValue(null);
+    repository.create.mockResolvedValue(
+      reservation({
+        endsAt: new Date('2026-06-20T16:00:00.000Z'),
+        startsAt: new Date('2026-06-20T15:00:00.000Z'),
+      }),
+    );
+
+    const result = await service.create(
+      createReservationDto({
+        endsAt: '2026-06-20T16:00:00.000Z',
+        startsAt: '2026-06-20T15:00:00.000Z',
+      }),
+    );
+
+    expect(repository.findConflictingReservation).toHaveBeenCalledWith({
+      endsAt: new Date('2026-06-20T16:00:00.000Z'),
+      roomId: ROOM_ID,
+      startsAt: new Date('2026-06-20T15:00:00.000Z'),
+    });
+    expect(repository.create).toHaveBeenCalled();
+    expect(result.startsAt).toEqual(new Date('2026-06-20T15:00:00.000Z'));
+  });
+
   it('blocks reservations that conflict with another reservation in the same room', async () => {
     repository.findRoomById.mockResolvedValue(room());
     repository.findConflictingReservation.mockResolvedValue(reservation());
@@ -109,6 +157,33 @@ describe('ReservationsService', () => {
       roomId: ROOM_ID,
       startsAt: new Date('2026-06-20T14:00:00.000Z'),
     });
+  });
+
+  it('blocks updates when the new schedule conflicts with another reservation', async () => {
+    repository.findReservationById.mockResolvedValue(reservation());
+    repository.findRoomById.mockResolvedValue(room());
+    repository.findConflictingReservation.mockResolvedValue(
+      reservation({
+        id: 'b2b14c0c-49f6-42a1-9b2b-bcc695a55436',
+      }),
+    );
+
+    await expectAppError(
+      service.update(RESERVATION_ID, {
+        endsAt: '2026-06-20T17:00:00.000Z',
+        startsAt: '2026-06-20T16:00:00.000Z',
+      }),
+      HttpStatus.CONFLICT,
+      'Já existe uma reserva para esta sala nesse horário.',
+    );
+
+    expect(repository.findConflictingReservation).toHaveBeenCalledWith({
+      endsAt: new Date('2026-06-20T17:00:00.000Z'),
+      ignoredReservationId: RESERVATION_ID,
+      roomId: ROOM_ID,
+      startsAt: new Date('2026-06-20T16:00:00.000Z'),
+    });
+    expect(repository.update).not.toHaveBeenCalled();
   });
 });
 

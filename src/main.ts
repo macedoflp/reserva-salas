@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Logger,
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
@@ -9,6 +10,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { ValidationError } from 'class-validator';
 import { GlobalExceptionFilter } from '@common';
 import { AppModule } from './app.module';
+
+const logger = new Logger('Bootstrap');
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -50,6 +53,11 @@ async function bootstrap(): Promise<void> {
   const port = configService.get<number>('app.port', 3000);
 
   await app.listen(port);
+
+  const appUrl = await app.getUrl();
+  logger.log(`API disponível em: ${appUrl}/api/v1`);
+  logger.log(`Swagger disponível em: ${appUrl}/docs`);
+  logger.log(`Swagger também disponível em: ${appUrl}/api/docs`);
 }
 void bootstrap();
 
