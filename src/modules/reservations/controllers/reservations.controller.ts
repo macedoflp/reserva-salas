@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -94,8 +95,11 @@ export class ReservationsController {
     description: 'Reservation created successfully.',
     type: ReservationEntity,
   })
-  @ApiBadRequestResponse({ description: 'Invalid reservation payload.' })
+  @ApiBadRequestResponse({
+    description: 'Invalid payload, invalid time range, or room over capacity.',
+  })
   @ApiNotFoundResponse({ description: 'Room not found.' })
+  @ApiConflictResponse({ description: 'Reservation time conflict.' })
   create(
     @Body() createReservationDto: CreateReservationDto,
   ): Promise<ReservationEntity> {
@@ -114,9 +118,11 @@ export class ReservationsController {
     type: ReservationEntity,
   })
   @ApiBadRequestResponse({
-    description: 'Invalid reservation id or payload.',
+    description:
+      'Invalid reservation id, invalid payload, invalid time range, or room over capacity.',
   })
   @ApiNotFoundResponse({ description: 'Reservation or room not found.' })
+  @ApiConflictResponse({ description: 'Reservation time conflict.' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateReservationDto: UpdateReservationDto,

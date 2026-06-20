@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@database';
-import type { Prisma, Reservation } from '../../../../generated/prisma/client';
+import type {
+  Prisma,
+  Reservation,
+  Room,
+} from '../../../../generated/prisma/client';
 import {
   ListReservationsQueryDto,
   ReservationOrder,
@@ -23,6 +27,13 @@ interface UpdateReservationData {
   title?: string;
 }
 
+interface FindConflictingReservationParams {
+  endsAt: Date;
+  ignoredReservationId?: string;
+  roomId: string;
+  startsAt: Date;
+}
+
 @Injectable()
 export class ReservationsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -36,10 +47,39 @@ export class ReservationsRepository {
     });
   }
 
-  findById(id: string): Promise<Reservation | null> {
+  findReservationById(id: string): Promise<Reservation | null> {
     return this.prisma.reservation.findUnique({
       where: {
         id,
+      },
+    });
+  }
+
+  findRoomById(id: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
+  findConflictingReservation(
+    params: FindConflictingReservationParams,
+  ): Promise<Reservation | null> {
+    return this.prisma.reservation.findFirst({
+      where: {
+        endsAt: {
+          gt: params.startsAt,
+        },
+        id: params.ignoredReservationId
+          ? {
+              not: params.ignoredReservationId,
+            }
+          : undefined,
+        roomId: params.roomId,
+        startsAt: {
+          lt: params.endsAt,
+        },
       },
     });
   }

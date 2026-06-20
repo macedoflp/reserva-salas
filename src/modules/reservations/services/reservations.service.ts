@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AppHttpException } from '@common';
-import { RoomsService } from '../../rooms/services';
+import type { Room } from '../../../../generated/prisma/client';
 import { CreateReservationDto } from '../dto/create-reservation.dto';
 import { ListReservationsQueryDto } from '../dto/list-reservations-query.dto';
 import { UpdateReservationDto } from '../dto/update-reservation.dto';
@@ -11,7 +11,6 @@ import { ReservationsRepository } from '../repositories';
 export class ReservationsService {
   constructor(
     private readonly reservationsRepository: ReservationsRepository,
-    private readonly roomsService: RoomsService,
   ) {}
 
   async findAll(query: ListReservationsQueryDto): Promise<ReservationEntity[]> {
@@ -31,11 +30,20 @@ export class ReservationsService {
   async create(
     createReservationDto: CreateReservationDto,
   ): Promise<ReservationEntity> {
-    await this.roomsService.findOne(createReservationDto.roomId);
+    const room = await this.findRoomByIdOrThrow(createReservationDto.roomId);
 
     const startsAt = new Date(createReservationDto.startsAt);
     const endsAt = new Date(createReservationDto.endsAt);
     this.assertEndsAtAfterStartsAt(startsAt, endsAt);
+    this.assertParticipantsWithinCapacity(
+      createReservationDto.participants,
+      room,
+    );
+    await this.assertNoScheduleConflict({
+      endsAt,
+      roomId: createReservationDto.roomId,
+      startsAt,
+    });
 
     const reservation = await this.reservationsRepository.create({
       ...createReservationDto,
@@ -51,11 +59,11 @@ export class ReservationsService {
     updateReservationDto: UpdateReservationDto,
   ): Promise<ReservationEntity> {
     const currentReservation = await this.findByIdOrThrow(id);
+    const roomId = updateReservationDto.roomId ?? currentReservation.roomId;
+    const room = await this.findRoomByIdOrThrow(roomId);
 
-    if (updateReservationDto.roomId) {
-      await this.roomsService.findOne(updateReservationDto.roomId);
-    }
-
+    const participants =
+      updateReservationDto.participants ?? currentReservation.participants;
     const startsAt = updateReservationDto.startsAt
       ? new Date(updateReservationDto.startsAt)
       : currentReservation.startsAt;
@@ -63,6 +71,13 @@ export class ReservationsService {
       ? new Date(updateReservationDto.endsAt)
       : currentReservation.endsAt;
     this.assertEndsAtAfterStartsAt(startsAt, endsAt);
+    this.assertParticipantsWithinCapacity(participants, room);
+    await this.assertNoScheduleConflict({
+      endsAt,
+      ignoredReservationId: id,
+      roomId,
+      startsAt,
+    });
 
     const reservation = await this.reservationsRepository.update(id, {
       ...updateReservationDto,
@@ -79,7 +94,8 @@ export class ReservationsService {
   }
 
   private async findByIdOrThrow(id: string) {
-    const reservation = await this.reservationsRepository.findById(id);
+    const reservation =
+      await this.reservationsRepository.findReservationById(id);
 
     if (!reservation) {
       this.throwReservationNotFound(id);
@@ -88,12 +104,57 @@ export class ReservationsService {
     return reservation;
   }
 
+  private async findRoomByIdOrThrow(id: string): Promise<Room> {
+    const room = await this.reservationsRepository.findRoomById(id);
+
+    if (!room) {
+      throw new AppHttpException({
+        error: 'Not Found',
+        message: 'A sala informada não existe.',
+        statusCode: HttpStatus.NOT_FOUND,
+      });
+    }
+
+    return room;
+  }
+
   private assertEndsAtAfterStartsAt(startsAt: Date, endsAt: Date): void {
     if (endsAt <= startsAt) {
       throw new AppHttpException({
         error: 'Bad Request',
-        message: 'endsAt must be greater than startsAt.',
+        message: 'O horário final deve ser maior que o horário inicial.',
         statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+  }
+
+  private assertParticipantsWithinCapacity(
+    participants: number,
+    room: Room,
+  ): void {
+    if (participants > room.capacity) {
+      throw new AppHttpException({
+        error: 'Bad Request',
+        message: 'A reserva excede a capacidade da sala.',
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+  }
+
+  private async assertNoScheduleConflict(params: {
+    endsAt: Date;
+    ignoredReservationId?: string;
+    roomId: string;
+    startsAt: Date;
+  }): Promise<void> {
+    const conflictingReservation =
+      await this.reservationsRepository.findConflictingReservation(params);
+
+    if (conflictingReservation) {
+      throw new AppHttpException({
+        error: 'Conflict',
+        message: 'Já existe uma reserva para esta sala nesse horário.',
+        statusCode: HttpStatus.CONFLICT,
       });
     }
   }
