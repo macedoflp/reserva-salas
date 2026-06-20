@@ -10,7 +10,7 @@ export class CreateRoomDto {
   })
   @IsString({ message: 'O nome da sala deve ser uma string.' })
   @IsNotEmpty({ message: 'O nome da sala é obrigatório.' })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Maximum number of participants supported by the room.',
@@ -21,5 +21,5 @@ export class CreateRoomDto {
   @IsNotEmpty({ message: 'A capacidade da sala é obrigatória.' })
   @IsInt({ message: 'A capacidade da sala deve ser um número inteiro.' })
   @Min(1, { message: 'A capacidade da sala deve ser maior que 0.' })
-  capacity: number;
+  capacity!: number;
 }

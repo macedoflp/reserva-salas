@@ -48,7 +48,7 @@ export class CreateReservationDto {
   })
   @IsUUID(undefined, { message: 'O id da sala deve ser um UUID válido.' })
   @IsNotEmpty({ message: 'O id da sala é obrigatório.' })
-  roomId: string;
+  roomId!: string;
 
   @ApiProperty({
     description: 'Reservation title.',
@@ -57,7 +57,7 @@ export class CreateReservationDto {
   })
   @IsString({ message: 'O título da reserva deve ser uma string.' })
   @IsNotEmpty({ message: 'O título da reserva é obrigatório.' })
-  title: string;
+  title!: string;
 
   @ApiProperty({
     description: 'Number of reservation participants.',
@@ -72,7 +72,7 @@ export class CreateReservationDto {
   @Min(1, {
     message: 'A quantidade de participantes deve ser maior que 0.',
   })
-  participants: number;
+  participants!: number;
 
   @ApiProperty({
     description: 'Reservation start date and time.',
@@ -83,7 +83,7 @@ export class CreateReservationDto {
     message: 'O horário inicial deve ser uma data válida.',
   })
   @IsNotEmpty({ message: 'O horário inicial é obrigatório.' })
-  startsAt: string;
+  startsAt!: string;
 
   @ApiProperty({
     description: 'Reservation end date and time.',
@@ -95,5 +95,5 @@ export class CreateReservationDto {
   })
   @IsNotEmpty({ message: 'O horário final é obrigatório.' })
   @Validate(EndsAtAfterStartsAtConstraint)
-  endsAt: string;
+  endsAt!: string;
 }

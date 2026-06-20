@@ -13,40 +13,40 @@ export class ReservationEntity {
     example: '5de98846-a9f6-4f73-8454-724407ab04c1',
     format: 'uuid',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'Room UUID.',
     example: '8a7f85d8-25c2-4d4e-9f33-e62dd16bda02',
     format: 'uuid',
   })
-  roomId: string;
+  roomId!: string;
 
   @ApiProperty({
     description: 'Reservation title.',
     example: 'Planejamento semanal',
   })
-  title: string;
+  title!: string;
 
   @ApiProperty({
     description: 'Number of reservation participants.',
     example: 6,
   })
-  participants: number;
+  participants!: number;
 
   @ApiProperty({
     description: 'Reservation start date and time.',
     example: '2026-06-20T14:00:00.000Z',
     format: 'date-time',
   })
-  startsAt: Date;
+  startsAt!: Date;
 
   @ApiProperty({
     description: 'Reservation end date and time.',
     example: '2026-06-20T15:00:00.000Z',
     format: 'date-time',
   })
-  endsAt: Date;
+  endsAt!: Date;
 
   @ApiProperty({
     description: 'Calculated reservation status.',
@@ -60,14 +60,14 @@ export class ReservationEntity {
     example: '2026-06-20T13:00:00.000Z',
     format: 'date-time',
   })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     description: 'Date when the reservation was last updated.',
     example: '2026-06-20T13:00:00.000Z',
     format: 'date-time',
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   constructor(reservation: Reservation) {
     Object.assign(this, reservation);
