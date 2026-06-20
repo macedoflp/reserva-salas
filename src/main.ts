@@ -7,20 +7,24 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { OpenAPIObject } from '@nestjs/swagger';
 import type { ValidationError } from 'class-validator';
 import { GlobalExceptionFilter } from '@common';
 import { AppModule } from './app.module';
 
 const logger = new Logger('Bootstrap');
+const API_GLOBAL_PREFIX = 'api';
+const API_VERSION = '1';
+const API_BASE_PATH = `/${API_GLOBAL_PREFIX}/v${API_VERSION}`;
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix(API_GLOBAL_PREFIX);
   app.enableVersioning({
     type: VersioningType.URI,
-    defaultVersion: '1',
+    defaultVersion: API_VERSION,
   });
 
   app.useGlobalPipes(
@@ -37,9 +41,12 @@ async function bootstrap(): Promise<void> {
     .setTitle('Reserva de Salas API')
     .setDescription('API para gerenciamento de salas e reservas')
     .setVersion('1.0.0')
-    .addServer('/api/v1')
+    .addServer(API_BASE_PATH)
     .build();
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  const swaggerDocument = removeSwaggerBasePath(
+    SwaggerModule.createDocument(app, swaggerConfig),
+    API_BASE_PATH,
+  );
   const swaggerOptions = {
     swaggerOptions: {
       persistAuthorization: true,
@@ -55,7 +62,7 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 
   const appUrl = await app.getUrl();
-  logger.log(`API disponível em: ${appUrl}/api/v1`);
+  logger.log(`API disponível em: ${appUrl}${API_BASE_PATH}`);
   logger.log(`Swagger disponível em: ${appUrl}/docs`);
   logger.log(`Swagger também disponível em: ${appUrl}/api/docs`);
 }
@@ -80,4 +87,25 @@ function flattenValidationErrors(
 
     return [...constraints, ...children];
   });
+}
+
+function removeSwaggerBasePath(
+  document: OpenAPIObject,
+  basePath: string,
+): OpenAPIObject {
+  document.paths = Object.fromEntries(
+    Object.entries(document.paths).map(([path, pathItem]) => {
+      if (path === basePath) {
+        return ['/', pathItem];
+      }
+
+      if (path.startsWith(`${basePath}/`)) {
+        return [path.slice(basePath.length), pathItem];
+      }
+
+      return [path, pathItem];
+    }),
+  );
+
+  return document;
 }

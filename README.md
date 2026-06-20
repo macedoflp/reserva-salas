@@ -114,7 +114,7 @@ O projeto usa a variável `DATABASE_URL` para conectar no Neon PostgreSQL.
 Exemplo seguro:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DATABASE?sslmode=require&channel_binding=require"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DATABASE?sslmode=verify-full&channel_binding=require"
 ```
 
 Não commite o `.env`. O arquivo já está ignorado no `.gitignore`.
@@ -127,7 +127,7 @@ Não commite o `.env`. O arquivo já está ignorado no `.gitignore`.
 4. Garanta que a URL usa SSL:
 
 ```txt
-sslmode=require&channel_binding=require
+sslmode=verify-full&channel_binding=require
 ```
 
 5. Cole a URL real no `.env`, substituindo apenas o valor de `DATABASE_URL`.
