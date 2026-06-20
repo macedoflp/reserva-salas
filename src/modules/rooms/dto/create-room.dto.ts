@@ -6,9 +6,10 @@ export class CreateRoomDto {
   @ApiProperty({
     description: 'Room name.',
     example: 'Sala Reuniao 1',
+    minLength: 1,
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O nome da sala deve ser uma string.' })
+  @IsNotEmpty({ message: 'O nome da sala é obrigatório.' })
   name: string;
 
   @ApiProperty({
@@ -17,8 +18,8 @@ export class CreateRoomDto {
     minimum: 1,
   })
   @Type(() => Number)
-  @IsNotEmpty()
-  @IsInt()
-  @Min(1)
+  @IsNotEmpty({ message: 'A capacidade da sala é obrigatória.' })
+  @IsInt({ message: 'A capacidade da sala deve ser um número inteiro.' })
+  @Min(1, { message: 'A capacidade da sala deve ser maior que 0.' })
   capacity: number;
 }

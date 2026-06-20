@@ -1,7 +1,12 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { ValidationError } from 'class-validator';
 import { GlobalExceptionFilter } from '@common';
 import { AppModule } from './app.module';
 
@@ -17,6 +22,7 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalPipes(
     new ValidationPipe({
+      exceptionFactory: createValidationException,
       forbidNonWhitelisted: true,
       transform: true,
       whitelist: true,
@@ -31,7 +37,14 @@ async function bootstrap(): Promise<void> {
     .addServer('/api/v1')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDocument);
+  const swaggerOptions = {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  };
+  SwaggerModule.setup('docs', app, swaggerDocument, swaggerOptions);
+  SwaggerModule.setup('api/docs', app, swaggerDocument, swaggerOptions);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 3000);
@@ -39,3 +52,24 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 }
 void bootstrap();
+
+function createValidationException(
+  validationErrors: ValidationError[],
+): BadRequestException {
+  const messages = flattenValidationErrors(validationErrors);
+
+  return new BadRequestException(
+    messages.length > 0 ? messages.join('; ') : 'Dados inválidos.',
+  );
+}
+
+function flattenValidationErrors(
+  validationErrors: ValidationError[],
+): string[] {
+  return validationErrors.flatMap((validationError) => {
+    const constraints = Object.values(validationError.constraints ?? {});
+    const children = flattenValidationErrors(validationError.children ?? []);
+
+    return [...constraints, ...children];
+  });
+}

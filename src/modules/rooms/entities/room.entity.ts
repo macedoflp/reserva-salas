@@ -4,6 +4,7 @@ export class RoomEntity {
   @ApiProperty({
     description: 'Room UUID.',
     example: '8a7f85d8-25c2-4d4e-9f33-e62dd16bda02',
+    format: 'uuid',
   })
   id: string;
 
@@ -22,12 +23,14 @@ export class RoomEntity {
   @ApiProperty({
     description: 'Date when the room was created.',
     example: '2026-06-20T13:00:00.000Z',
+    format: 'date-time',
   })
   createdAt: Date;
 
   @ApiProperty({
     description: 'Date when the room was last updated.',
     example: '2026-06-20T13:00:00.000Z',
+    format: 'date-time',
   })
   updatedAt: Date;
 

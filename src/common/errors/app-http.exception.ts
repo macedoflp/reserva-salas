@@ -1,15 +1,16 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { STATUS_CODES } from 'node:http';
 
 interface AppHttpExceptionOptions {
   details?: Record<string, unknown>;
   error?: string;
-  message: string | string[];
+  message: string;
   statusCode: HttpStatus;
 }
 
 export class AppHttpException extends HttpException {
   constructor(options: AppHttpExceptionOptions) {
-    const error = options.error ?? String(HttpStatus[options.statusCode]);
+    const error = options.error ?? STATUS_CODES[options.statusCode] ?? 'Error';
 
     super(
       {

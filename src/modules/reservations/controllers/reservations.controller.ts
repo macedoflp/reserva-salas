@@ -12,17 +12,13 @@ import {
   Query,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
-  ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiNoContentResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiErrorResponseDto } from '@common';
 import { CreateReservationDto } from '../dto/create-reservation.dto';
 import {
   ListReservationsQueryDto,
@@ -60,12 +56,17 @@ export class ReservationsController {
     name: 'order',
     required: false,
   })
-  @ApiOkResponse({
+  @ApiResponse({
     description: 'Reservations listed successfully.',
     isArray: true,
+    status: HttpStatus.OK,
     type: ReservationEntity,
   })
-  @ApiBadRequestResponse({ description: 'Invalid query params.' })
+  @ApiResponse({
+    description: 'Invalid query params.',
+    status: HttpStatus.BAD_REQUEST,
+    type: ApiErrorResponseDto,
+  })
   findAll(
     @Query() query: ListReservationsQueryDto,
   ): Promise<ReservationEntity[]> {
@@ -79,27 +80,47 @@ export class ReservationsController {
     example: '5de98846-a9f6-4f73-8454-724407ab04c1',
     name: 'id',
   })
-  @ApiOkResponse({
+  @ApiResponse({
     description: 'Reservation found successfully.',
+    status: HttpStatus.OK,
     type: ReservationEntity,
   })
-  @ApiBadRequestResponse({ description: 'Invalid reservation id.' })
-  @ApiNotFoundResponse({ description: 'Reservation not found.' })
+  @ApiResponse({
+    description: 'Invalid reservation id.',
+    status: HttpStatus.BAD_REQUEST,
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    description: 'Reservation not found.',
+    status: HttpStatus.NOT_FOUND,
+    type: ApiErrorResponseDto,
+  })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ReservationEntity> {
     return this.reservationsService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a reservation' })
-  @ApiCreatedResponse({
+  @ApiResponse({
     description: 'Reservation created successfully.',
+    status: HttpStatus.CREATED,
     type: ReservationEntity,
   })
-  @ApiBadRequestResponse({
+  @ApiResponse({
     description: 'Invalid payload, invalid time range, or room over capacity.',
+    status: HttpStatus.BAD_REQUEST,
+    type: ApiErrorResponseDto,
   })
-  @ApiNotFoundResponse({ description: 'Room not found.' })
-  @ApiConflictResponse({ description: 'Reservation time conflict.' })
+  @ApiResponse({
+    description: 'Room not found.',
+    status: HttpStatus.NOT_FOUND,
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    description: 'Reservation time conflict.',
+    status: HttpStatus.CONFLICT,
+    type: ApiErrorResponseDto,
+  })
   create(
     @Body() createReservationDto: CreateReservationDto,
   ): Promise<ReservationEntity> {
@@ -113,16 +134,27 @@ export class ReservationsController {
     example: '5de98846-a9f6-4f73-8454-724407ab04c1',
     name: 'id',
   })
-  @ApiOkResponse({
+  @ApiResponse({
     description: 'Reservation updated successfully.',
+    status: HttpStatus.OK,
     type: ReservationEntity,
   })
-  @ApiBadRequestResponse({
+  @ApiResponse({
     description:
       'Invalid reservation id, invalid payload, invalid time range, or room over capacity.',
+    status: HttpStatus.BAD_REQUEST,
+    type: ApiErrorResponseDto,
   })
-  @ApiNotFoundResponse({ description: 'Reservation or room not found.' })
-  @ApiConflictResponse({ description: 'Reservation time conflict.' })
+  @ApiResponse({
+    description: 'Reservation or room not found.',
+    status: HttpStatus.NOT_FOUND,
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    description: 'Reservation time conflict.',
+    status: HttpStatus.CONFLICT,
+    type: ApiErrorResponseDto,
+  })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateReservationDto: UpdateReservationDto,
@@ -138,9 +170,20 @@ export class ReservationsController {
     example: '5de98846-a9f6-4f73-8454-724407ab04c1',
     name: 'id',
   })
-  @ApiNoContentResponse({ description: 'Reservation deleted successfully.' })
-  @ApiBadRequestResponse({ description: 'Invalid reservation id.' })
-  @ApiNotFoundResponse({ description: 'Reservation not found.' })
+  @ApiResponse({
+    description: 'Reservation deleted successfully.',
+    status: HttpStatus.NO_CONTENT,
+  })
+  @ApiResponse({
+    description: 'Invalid reservation id.',
+    status: HttpStatus.BAD_REQUEST,
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    description: 'Reservation not found.',
+    status: HttpStatus.NOT_FOUND,
+    type: ApiErrorResponseDto,
+  })
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.reservationsService.remove(id);
   }

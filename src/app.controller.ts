@@ -1,5 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import type { HealthCheckResponse } from './app.service';
 
@@ -10,7 +10,9 @@ export class AppController {
 
   @Get()
   @ApiOperation({ summary: 'Healthcheck da API' })
-  @ApiOkResponse({
+  @ApiResponse({
+    description: 'API is running.',
+    status: HttpStatus.OK,
     schema: {
       example: {
         status: 'ok',

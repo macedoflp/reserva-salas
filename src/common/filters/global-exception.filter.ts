@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { STATUS_CODES } from 'node:http';
 import type { Request, Response } from 'express';
 import type { ApiErrorResponse } from '../responses';
 
@@ -22,11 +23,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getResponse() : null;
 
     const body: ApiErrorResponse = {
-      error: this.extractError(exceptionResponse, statusCode),
-      message: this.extractMessage(exceptionResponse),
-      path: request.url,
       statusCode,
+      message: this.extractMessage(exceptionResponse, statusCode),
+      error: this.extractError(exceptionResponse, statusCode),
       timestamp: new Date().toISOString(),
+      path: request.originalUrl ?? request.url,
     };
 
     response.status(statusCode).json(body);
@@ -34,7 +35,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   private extractError(
     exceptionResponse: string | object | null,
-    statusCode: HttpStatus,
+    statusCode: number,
   ): string {
     if (this.isRecord(exceptionResponse)) {
       const error = exceptionResponse.error;
@@ -44,10 +45,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     }
 
-    return String(HttpStatus[statusCode] ?? 'Error');
+    return STATUS_CODES[statusCode] ?? 'Error';
   }
 
-  private extractMessage(exceptionResponse: string | object | null) {
+  private extractMessage(
+    exceptionResponse: string | object | null,
+    statusCode: number,
+  ): string {
     if (typeof exceptionResponse === 'string') {
       return exceptionResponse;
     }
@@ -56,11 +60,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const message = exceptionResponse.message;
 
       if (typeof message === 'string' || this.isStringArray(message)) {
-        return message;
+        return Array.isArray(message) ? message.join('; ') : message;
       }
     }
 
-    return 'Internal server error';
+    return statusCode === 500
+      ? 'Internal server error'
+      : (STATUS_CODES[statusCode] ?? 'Error');
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
